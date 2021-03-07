@@ -65,7 +65,7 @@ class ServicesXMLFormatter implements ServicesFormatterInterface {
         if (is_numeric($key)) {
           $key = 'item';
         }
-        elseif (empty($item)) {
+        elseif (empty($key)) {
           continue;
         }
         else {
