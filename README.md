@@ -18,25 +18,29 @@ http://drupal.org/node/109782
 
 Installation
 ------------
-If you are using the rest server you will need to download the latest version of SPYC:
-wget https://raw.githubusercontent.com/mustangostang/spyc/0.6.3/Spyc.php -O  servers/rest_server/lib/spyc.php
+If you are using the rest server, you will need to download the latest version
+of SPYC:
 
-Once downloaded you need to add spyc.php to the rest_server/lib folder which exists under
-the location you have installed services in.
+`wget https://raw.githubusercontent.com/mustangostang/spyc/0.6.3/Spyc.php -O  servers/rest_server/lib/spyc.php`
+
+Once downloaded, you need to add spyc.php to the `rest_server/lib` folder, which
+exists under the location you have installed the Services module in.
 
 Documentation files
 -------------------
-You can find these files in /docs folder.
-services.authentication.api.php -- hooks related to authentication plugins
-services.servers.api.php -- servers definition hooks
-services.services.api.php -- definition of new services
-services.versions.api.php -- how to write versioned resources
+You can find these files in /docs folder:
+
+- `services.authentication.api.php`: hooks related to authentication plugins
+- `services.servers.api.php`: servers definition hooks
+- `services.services.api.php`: definition of new services
+- `services.versions.api.php`: how to write versioned resources
 
 Settings via variables
 ----------------------
 
-'services_{$resource}_index_page_size' -- this variable controls maximum number of results that
-will be displayed by index query. See services_resource_build_index_query() for more information.
+`'services_{$resource}_index_page_size'` -- this variable controls maximum
+number of results that will be displayed by the index query. See
+`services_resource_build_index_query()` for more information.
 
 How To Install
 --------------
