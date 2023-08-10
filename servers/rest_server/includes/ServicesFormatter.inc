@@ -90,13 +90,8 @@ class ServicesXMLFormatter implements ServicesFormatterInterface {
 
 class ServicesYAMLFormatter implements ServicesFormatterInterface {
   public function render($data) {
-    if (($library = libraries_load('spyc')) && !empty($library['loaded'])) {
-      return Spyc::YAMLDump($data, 4, 60);
-    }
-    else {
-      watchdog('REST Server', 'Spyc library not found!', array(), WATCHDOG_ERROR);
-      return '';
-    }
+    module_load_include('php', 'rest_server', 'lib/spyc');
+    return Spyc::YAMLDump($data, 4, 60);
   }
 }
 
