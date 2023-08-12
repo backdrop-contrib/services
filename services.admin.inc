@@ -356,11 +356,6 @@ function services_endpoint_edit_form($form, &$form_state, $endpoint = NULL) {
     '#description' => t('The endpoint name can only consist of lowercase letters, underscores, and numbers.'),
   );
 
-  $form['eid'] = array(
-    '#type'  => 'value',
-    '#value' => isset($endpoint->eid) ? $endpoint->eid : '',
-  );
-
   $form['endpoint_object'] = array(
     '#type'  => 'value',
     '#value' => $endpoint,
@@ -452,18 +447,19 @@ function services_endpoint_edit_form($form, &$form_state, $endpoint = NULL) {
  * Validate submission of the preset edit form.
  */
 function services_endpoint_edit_form_validate(&$form, &$form_state) {
-  // Validate path.
-  $query = db_select('services_endpoint', 'e');
-  $query->addField('e', 'eid');
-  $query->condition('path', $form_state['values']['path']);
+  $endpoint_object = $form_state['values']['endpoint_object'];
 
-  if (!empty($form_state['values']['eid']) && is_numeric($form_state['values']['eid'])) {
-    $query->condition('eid', $form_state['values']['eid'], '!=');
-  }
+  // Evaluate the endpoint path if this endpoint is new or the path has changed.
+  if (!$endpoint_object || $endpoint_object->is_new || $endpoint_object->path != $form_state['values']['path']) {
+    $names = config_get_names_with_prefix('services.endpoint.');
+    foreach ($names as $config_name) {
+      $config = config($config_name);
+      $config_path = $config->get('path');
 
-  $res = $query->execute()->fetchField();
-  if (!empty($res)) {
-    form_error($form['path'], t('Endpoint path must be unique.'));
+      if ($form_state['values']['path'] == $config_path) {
+        form_error($form['path'], t('Endpoint path must be unique.'));
+      }
+    }
   }
 }
 
@@ -471,8 +467,8 @@ function services_endpoint_edit_form_validate(&$form, &$form_state) {
  * Endpoint name check whether this machine name already exists.
  */
 function services_endpoint_machine_name_exists($value) {
-  $result = db_query('SELECT eid FROM {services_endpoint} WHERE name = :name', array(':name' => $value))->fetchField();
-  return !empty($result);
+  $result = config_get('services.endpoint.' . $value, 'name');
+  return ($result == $value);
 }
 
 /**
@@ -482,6 +478,11 @@ function services_endpoint_edit_form_submit(&$form, &$form_state) {
   $endpoint = $form_state['values']['endpoint_object'];
   if (empty($endpoint)) {
     $endpoint = new stdClass;
+  }
+  if (!$endpoint->is_new && $endpoint->name && $endpoint->name != $form_state['values']['name']) {
+    // Endpoint is being renamed. Remove the old config file.
+    $config_old = config('services.endpoint.' . $endpoint->name);
+    $config_old->delete();
   }
 
   $endpoint->name   = $form_state['values']['name'];
@@ -999,11 +1000,8 @@ function services_toggle_enable_page($form, &$form_state, $endpoint) {
  */
 function services_toggle_enable_page_submit($form, &$form_state) {
   $endpoint = $form_state['endpoint'];
-  $result = db_update('services_endpoint')
-    ->fields(array(
-      'status' => $endpoint->status ? 0 : 1,
-    ))
-    ->execute();
+  $status = $endpoint->status ? 0 : 1;
+  config_set('services.endpoint.' . $endpoint->name, 'status', $status);
   backdrop_set_message($endpoint->name . ' was updated.');
   backdrop_goto('admin/structure/services/list');
 }
