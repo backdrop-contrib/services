@@ -175,6 +175,22 @@ function services_security_update_reset_users_with_password_one_op($progress, $l
 }
 
 /**
+ * Implements hook_config_info().
+ */
+function services_config_info() {
+  $prefixes['services.endpoint'] = array(
+    'name_key' => 'name',
+    'label_key' => 'name',
+    'group' => t('Services endpoints'),
+  );
+  $prefixes['services.settings'] = array(
+    'label' => t('Services settings'),
+    'group' => t('Configuration'),
+  );
+  return $prefixes;
+}
+
+/**
  * Implements hook_perm().
  */
 function services_permission() {
@@ -436,29 +452,22 @@ function services_endpoint_callback($endpoint_name) {
   backdrop_not_found();
 }
 
-
-
 /**
- * Create a new endpoint with defaults appropriately set from schema.
+ * Create a new endpoint with defaults appropriately set.
  *
  * @return stdClass
  *  An endpoint initialized with the default values.
  */
 function services_endpoint_new() {
-  $schema = backdrop_get_schema('services_endpoint');
-
   $object = new stdClass;
-  foreach ($schema['fields'] as $field => $info) {
-    if (isset($info['object default'])) {
-      $object->$field = $info['object default'];
-    }
-    else if (isset($info['default'])) {
-      $object->$field = $info['default'];
-    }
-    else {
-      $object->$field = NULL;
-    }
-  }
+  $object->name = NULL;
+  $object->server = NULL;
+  $object->path = NULL;
+  $object->authentication = array();
+  $object->server_settings = array();
+  $object->resources = array();
+  $object->status = 1;
+  $object->debug = 0;
 
   return $object;
 }
@@ -495,22 +504,17 @@ function services_endpoint_load_all() {
  * @return void
  */
 function services_endpoint_save($endpoint) {
-  // Set a default of an array if the value is not present.
-  foreach (array('server_settings', 'resources', 'authentication') as $endpoint_field) {
-    if (empty($endpoint->{$endpoint_field})) {
-      $endpoint->{$endpoint_field} = array();
+  // Create a new endpoint object to ensure we save only the fields we need.
+  $endpoint_data = services_endpoint_new();
+  foreach (array_keys(get_object_vars($endpoint_data)) as $endpoint_field) {
+    if (!empty($endpoint->{$endpoint_field})) {
+      $endpoint_data->{$endpoint_field} = $endpoint->{$endpoint_field};
     }
   }
-  if (!empty($endpoint->is_new)) {
-    // New record.
-    $update = array();
-  }
-  else {
-    // Existing record.
-    $update = array('name');
-  }
 
-  backdrop_write_record('services_endpoint', $endpoint, $update);
+  $config = config('services.endpoint.' . $endpoint->name);
+  $config->setData((array) $endpoint_data);
+  $config->save();
 
   backdrop_static_reset('services_load_endpoint_object');
   menu_rebuild();
@@ -523,9 +527,8 @@ function services_endpoint_save($endpoint) {
  * @return void
  */
 function services_endpoint_delete($endpoint) {
-  db_delete('services_endpoint')
-    ->condition('name', $endpoint->name)
-    ->execute();
+  $config = config('services.endpoint.' . $endpoint->name);
+  $config->delete();
 
   backdrop_static_reset('services_load_endpoint_object');
   menu_rebuild();
@@ -1172,21 +1175,16 @@ function _services_session_token() {
   backdrop_exit();
 }
 
+/**
+ * Fetches an array of endpoint objects (or a single object if requested).
+ *
+ * @param $name
+ *   Optional. The name of the endpoint to retrieve.
+ *
+ * @return array
+ */
 function services_load_endpoint_object($name = NULL) {
-  $table = 'services_endpoint';
-
   $cache = &backdrop_static(__FUNCTION__);
-  $cache_table_exists = &backdrop_static(__FUNCTION__ . '_table_exists', array());
-
-  if (!$cache_table_exists) {
-    $cache_table_exists = db_table_exists($table);
-  }
-
-  $schema = backdrop_get_schema($table, TRUE);
-
-  if (empty($schema) || !$cache_table_exists) {
-    return array();
-  }  
 
   // If fetching all we are finished.
   if (!$name && $cache) {
@@ -1198,37 +1196,18 @@ function services_load_endpoint_object($name = NULL) {
     return $cache[$name];
   }
 
-  // Build the query
-  $query = db_select($table, 'q')->fields('q');
-
-  if ($name) {
-    $query->condition('name', array($name), 'IN');
-  }
-  $result = $query->execute();
-  
-  // Unpack the results of the query onto objects and cache them.
-  foreach ($result as $data) {
-    $object = new stdClass;
-    $object->name = $data->name;
-    $object->table = $table;
-    $object->type = t('Normal');
-    foreach ($data as $field_name => $field) {
-      if (!empty($schema['fields'][$field_name]['serialize'])) {
-        $object->{$field_name} = unserialize($field);
-      }
-      else {
-        $object->{$field_name} = $field;
-      }
-
-    }
-    unset($object->eid);
-    unset($object->table);
-
-    $cache[$object->name] = $object;
+  $config_names = config_get_names_with_prefix('services.endpoint.');
+  foreach ($config_names as $config_name) {
+    $config = config($config_name);
+    $data = (object) $config->getData();
+    $cache[$data->name] = $data;
   }
 
-  if ($cache && !$name) {
-    $cached_database = TRUE;
+  // Return an individual object if requested.
+  if (!empty($name)) {
+    return isset($cache[$name]) ? $cache[$name] : array();
+  }
+  elseif ($cache) {
     return $cache;
   }
 
