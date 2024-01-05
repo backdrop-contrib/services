@@ -60,9 +60,8 @@ function rest_server_request_parsers() {
       'text/xml' => 'ServicesParserXML',
     );
 
-    if (($library = libraries_load('spyc')) && !empty($library['loaded'])) {
-      $parsers['application/x-yaml'] = 'ServicesParserYAML';
-    }
+    module_load_include('php', 'rest_server', 'lib/spyc');
+    $parsers['application/x-yaml'] = 'ServicesParserYAML';
 
     backdrop_alter('rest_server_request_parsers', $parsers);
   }
@@ -104,12 +103,11 @@ function rest_server_response_formatters() {
       ),
     );
 
-    if (($library = libraries_load('spyc')) && !empty($library['loaded'])) {
-      $formatters['yaml'] = array(
-        'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
-        'formatter class' => 'ServicesYAMLFormatter',
-      );
-    }
+    module_load_include('php', 'rest_server', 'lib/spyc');
+    $formatters['yaml'] = array(
+      'mime types' => array('text/plain', 'application/x-yaml', 'text/yaml'),
+      'formatter class' => 'ServicesYAMLFormatter',
+    );
 
     backdrop_alter('rest_server_response_formatters', $formatters);
   }
@@ -170,26 +168,6 @@ function _rest_server_add_default_and_remove_unknown(&$array, $keys, $default) {
       unset($array[$key]);
     }
   }
-}
-
-/**
- * Implements hook_libraries_info().
- */
-function rest_server_libraries_info() {
-  $libraries['spyc'] = array(
-    'name' => 'Spyc',
-    'vendor url' => 'https://github.com/mustangostang/spyc',
-    'download url' => 'https://raw.githubusercontent.com/mustangostang/spyc/0.6.3/Spyc.php',
-    'version arguments' => array(
-      'file' => 'Spyc.php',
-      'pattern' => '@version\s+([0-9a-zA-Z\.-]+)@',
-    ),
-    'files' => array(
-      'php' => array('Spyc.php'),
-    ),
-  );
-
-  return $libraries;
 }
 
 /**

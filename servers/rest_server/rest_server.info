@@ -3,7 +3,6 @@ description = Provides a REST server.
 package = Services - servers
 
 dependencies[] = services
-dependencies[] = libraries
 
 backdrop = 1.x
 type = module

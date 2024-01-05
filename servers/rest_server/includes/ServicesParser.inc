@@ -132,13 +132,8 @@ class ServicesParserFile implements ServicesParserInterface {
 
 class ServicesParserYAML implements ServicesParserInterface {
   public function parse(ServicesContextInterface $context) {
-    if (($library = libraries_load('spyc')) && !empty($library['loaded'])) {
-      return Spyc::YAMLLoadString($context->getPostData());
-    }
-    else {
-      watchdog('REST Server', 'Spyc library not found!', array(), WATCHDOG_ERROR);
-      return array();
-    }
+    module_load_include('php', 'rest_server', 'lib/spyc');
+    return Spyc::YAMLLoadString($context->getPostData());
   }
 }
 
