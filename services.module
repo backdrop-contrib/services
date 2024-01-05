@@ -896,8 +896,9 @@ function services_request_apply_version(&$controller, $options = array()) {
     return;
   }
   $updates = services_get_updates();
-  if (isset($method) && isset($updates[$resource][$method])) {
-    foreach ($updates[$resource][$method] as $update) {
+  $resource_clean_name = str_replace('-', '_', $resource);
+  if (isset($method) && isset($updates[$resource_clean_name][$method])) {
+    foreach ($updates[$resource_clean_name][$method] as $update) {
       if (!isset($version)) {
         $endpoint = services_get_server_info('endpoint', '');
         $endpoint = services_endpoint_load($endpoint);
@@ -1186,7 +1187,7 @@ function services_load_endpoint_object($name = NULL) {
 
   if (empty($schema) || !$cache_table_exists) {
     return array();
-  }  
+  }
 
   // If fetching all we are finished.
   if (!$name && $cache) {
@@ -1205,7 +1206,7 @@ function services_load_endpoint_object($name = NULL) {
     $query->condition('name', array($name), 'IN');
   }
   $result = $query->execute();
-  
+
   // Unpack the results of the query onto objects and cache them.
   foreach ($result as $data) {
     $object = new stdClass;
