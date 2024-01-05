@@ -88,12 +88,6 @@ description = TBD
 group = Services
 file = functional/ServicesSecurityTests.test
 
-[ServicesSpycLibraryTests]
-name = ServicesSpycLibraryTests
-description = TBD
-group = Services
-file = unit/ServicesSpycLibraryTests.test
-
 [ServicesUITest]
 name = ServicesUITests
 description = TBD
